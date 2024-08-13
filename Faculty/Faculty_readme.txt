@@ -1,3 +1,4 @@
+#faculty
 
 echo "10.10.11.169 faculty.htb" >> /etc/hosts
 
