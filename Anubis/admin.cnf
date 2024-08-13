@@ -1,0 +1,12 @@
+[ req ]
+default_bits = 2048
+prompt = no
+req_extensions = user
+distinguished_name = dn
+
+[ dn ]
+CN = Administrator
+
+[ user ]
+subjectAltName = otherName:msUPN;UTF8:administrator@windcorp.htb
+
