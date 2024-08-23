@@ -14,10 +14,13 @@ PORT   STATE SERVICE VERSION
 Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 Фаззим
-oxdf@hacky$ ffuf -u http://10.10.11.18 -H "Host: FUZZ.usage.htb" -w  /home/kali/Desktop/SecLists/Discovery/DNS/subdomains-top1million-20000.txt -ac
 
+ffuf -u http://10.10.11.18 -H "Host: FUZZ.usage.htb" -w  /home/kali/Desktop/SecLists/Discovery/DNS/subdomains-top1million-20000.txt -ac
+
+Получаем:
 admin                   [Status: 200, Size: 3304...
 
+Прописываем себе:
 echo "10.10.11.18 usage.htb admin.htb" >> /etc/hosts
 
 
