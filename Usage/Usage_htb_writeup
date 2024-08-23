@@ -12,4 +12,10 @@ RCE CVE-2023-24249 в laravel-admin через web shell c подменой ра
 
 оставленный на машине исполняемый ELF файл для бэкапирования и танцы с бубном над ним (sudo -l);
 
-эксплоит "7za wildcard" и добыча внутренностей искомых файлов через костыли;
+Эксплоит "7za wildcard" и добыча файла id_rsa рута через костыли;
+
+
+
+/usr/bin/7za a /var/backups/project.zip -tzip -snl -mmt -- @whatever whatever
+
+
